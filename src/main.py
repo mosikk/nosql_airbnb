@@ -20,7 +20,7 @@ async def shutdown():
 
 app = FastAPI()
 
-app.include_router(router, tags=["Student"], prefix="/api/students")
+app.include_router(router, prefix="/airbnb")
 app.add_event_handler("startup", startup)
 app.add_event_handler("shutdown", shutdown)
 
