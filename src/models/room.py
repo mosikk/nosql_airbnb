@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from typing import Any
+from typing import Any, Optional
 
 
 class Room(BaseModel):
     id: str
     address: str
-    description: str
+    description: Optional[str]
 
     @classmethod
     def Map(cls, room: Any):
@@ -18,4 +18,4 @@ class Room(BaseModel):
 
 class UpdateRoom(BaseModel):
     address: str
-    description: str
+    description: Optional[str]

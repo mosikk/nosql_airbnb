@@ -3,10 +3,10 @@ import os
 from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from utils.mongo_utils import get_db_collection, filter_by_id
-from models.booking import Booking
+from utils.mongo_utils import get_db_collection, filter_by_id, filter_by_booking_id
+from models.booking import Booking, UpdateBooking
 from models.client import Client, UpdateClient
-from models.room import Room
+from models.room import Room, UpdateRoom
 
 
 class MongoRepository:
@@ -47,6 +47,18 @@ class MongoRepository:
     async def get_room_by_id(self, room_id: str) -> Room:
         room = await self._mongo_users_collection.find_one(filter_by_id(room_id))
         return Room.Map(room)
+
+
+    async def book_room(self, booking: UpdateBooking) -> str:
+        insert_result = await self._mongo_rooms_collection.insert_one(dict(booking))
+        return str(insert_result.inserted_id)
+    
+
+    async def pay_booking(self, booking_id: str) -> Booking:
+        cur_booking = Booking.map(await self._mongo_bookings_collection.find_one(filter_by_booking_id(booking_id)))
+        cur_booking.is_paid = True
+        booking = await self._mongo_bookings_collection.find_one_and_replace(filter_by_booking_id(booking_id), cur_booking)
+        return Booking.map(booking)
 
 
     @staticmethod

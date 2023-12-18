@@ -2,6 +2,7 @@ from bson import ObjectId
 from fastapi import APIRouter, status, Depends
 from starlette.responses import Response
 
+from models.booking import Booking, UpdateBooking
 from models.client import Client, UpdateClient
 from models.room import Room, UpdateRoom
 from repository.mongo_repository import MongoRepository
@@ -76,3 +77,27 @@ async def get_room_by_id(
     # memcached_rooms.add(room_id, riim, int(os.getenv('MEMCACHED_MESSENGER_ROOM_EXPIRE')))
     
     return room
+
+
+@router.post("/rooms/book_room")
+async def book_room_by_id(
+    booking: UpdateBooking,
+    repository: MongoRepository = Depends(MongoRepository.get_instance),
+):
+    if not ObjectId.is_valid(booking.client_id) or not ObjectId.is_valid(booking.room_id):
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    
+    booking_id = await repository.book_room(booking)
+    return booking_id
+
+
+@router.post("/rooms/pay_booking")
+async def pay_booking_by_id(
+    booking_id: str,
+    repository: MongoRepository = Depends(MongoRepository.get_instance),
+):
+    if not ObjectId.is_valid(booking_id):
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    
+    booking_id = await repository.pay_booking(booking_id)
+    return booking_id
