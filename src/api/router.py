@@ -83,20 +83,23 @@ async def get_room_by_id(
     
     return room
 
-'''
-@router.post("/rooms/book_room")
+
+@router.post("/bookings/book_room")
 async def book_room_by_id(
-    booking: UpdateBooking,
+    client_id: str,
+    room_id: str,
+    is_paid: bool,
     repository: MongoRepository = Depends(MongoRepository.get_instance),
 ):
-    if not ObjectId.is_valid(booking.client_id) or not ObjectId.is_valid(booking.room_id):
+    if not ObjectId.is_valid(client_id) or not ObjectId.is_valid(room_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
     
+    booking = UpdateBooking(client_id=client_id, room_id=room_id, is_paid=is_paid)
     booking_id = await repository.book_room(booking)
     return booking_id
 
 
-@router.post("/rooms/pay_booking")
+@router.post("/bookings/pay_booking")
 async def pay_booking_by_id(
     booking_id: str,
     repository: MongoRepository = Depends(MongoRepository.get_instance),
@@ -104,6 +107,32 @@ async def pay_booking_by_id(
     if not ObjectId.is_valid(booking_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
     
-    booking_id = await repository.pay_booking(booking_id)
-    return booking_id
-'''
+    booking = await repository.pay_booking(booking_id)
+    if booking is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    return booking
+
+
+@router.get("/bookings/{booking_id}", response_model=Booking)
+async def get_booking_by_id(
+    booking_id: str, 
+    repository: MongoRepository = Depends(MongoRepository.get_instance),
+    # memcached_rooms: HashClient = Depends(get_memcached_rooms),
+):
+    if not ObjectId.is_valid(booking_id):
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+
+    """
+    room = memcached_rooms.get(room_id)
+    if room is not None:
+        print('using cached room data', flush=True)
+        return room
+    """
+
+    booking = await repository.get_booking_by_id(booking_id)
+    if booking is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    
+    # memcached_rooms.add(room_id, riim, int(os.getenv('MEMCACHED_MESSENGER_ROOM_EXPIRE')))
+    
+    return booking

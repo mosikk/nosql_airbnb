@@ -3,7 +3,7 @@ import os
 from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
-from utils.mongo_utils import filter_by_id, filter_by_booking_id
+from utils.mongo_utils import filter_by_id
 from models.booking import Booking, UpdateBooking
 from models.client import Client, UpdateClient
 from models.room import Room, UpdateRoom
@@ -73,7 +73,7 @@ class MongoRepository:
         return str(insert_result.inserted_id)
     
 
-    async def get_client_by_id(self, client_id: str) -> Client:
+    async def get_client_by_id(self, client_id: str) -> Client | None:
         client = await self._mongo_clients_collection.find_one(filter_by_id(client_id))
         return Client.Map(client)
     
@@ -83,7 +83,7 @@ class MongoRepository:
         return str(insert_result.inserted_id)
     
 
-    async def get_room_by_id(self, room_id: str) -> Room:
+    async def get_room_by_id(self, room_id: str) -> Room | None:
         room = await self._mongo_rooms_collection.find_one(filter_by_id(room_id))
         return Room.Map(room)
 
@@ -93,11 +93,18 @@ class MongoRepository:
         return str(insert_result.inserted_id)
     
 
-    async def pay_booking(self, booking_id: str) -> Booking:
-        cur_booking = Booking.map(await self._mongo_bookings_collection.find_one(filter_by_booking_id(booking_id)))
-        cur_booking.is_paid = True
-        booking = await self._mongo_bookings_collection.find_one_and_replace(filter_by_booking_id(booking_id), cur_booking)
-        return Booking.map(booking)
+    async def pay_booking(self, booking_id: str) -> Booking | None:
+        cur_booking = Booking.Map(await self._mongo_bookings_collection.find_one(filter_by_id(booking_id)))
+        if cur_booking.is_paid == True:
+            return None
+        new_booking = Booking(id=cur_booking.id, client_id=cur_booking.client_id, room_id=cur_booking.room_id, is_paid=True)
+        await self._mongo_bookings_collection.find_one_and_replace(filter_by_id(booking_id), dict(new_booking))
+        return new_booking
+
+
+    async def get_booking_by_id(self, booking_id: str) -> Booking | None:
+        booking = await self._mongo_bookings_collection.find_one(filter_by_id(booking_id))
+        return Booking.Map(booking)
 
 
     @staticmethod
