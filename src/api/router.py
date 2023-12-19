@@ -19,10 +19,11 @@ async def add_client(
     client = UpdateClient(name=name)
     client_id = await repository.create_client(client)
     return client_id
+    # return name
 
-'''
+
 @router.get("/clients/{client_id}", response_model=Client)
-async def get_user_by_id(
+async def get_client_by_id(
     user_id: str, 
     repository: MongoRepository = Depends(MongoRepository.get_instance),
     # memcached_user_client: HashClient = Depends(get_memcached_user_client)
@@ -37,7 +38,7 @@ async def get_user_by_id(
         return user
     """
 
-    user = await repository.get_user_by_id(user_id)
+    user = await repository.get_client_by_id(user_id)
     if user is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     
@@ -45,7 +46,7 @@ async def get_user_by_id(
     
     return user
 
-
+'''
 @router.post("/rooms")
 async def add_room(
     room: UpdateRoom,

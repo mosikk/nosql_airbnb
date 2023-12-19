@@ -3,8 +3,8 @@ from fastapi import FastAPI
 import uvicorn
 
 from api.router import router
-from utils.mongo_utils import connect_and_init_mongo, close_mongo_connect
-from utils.elasticsearch_utils import connect_and_init_elasticsearch, close_elasticsearch_connect
+from repository.mongo_repository import connect_and_init_mongo, close_mongo_connect
+# from utils.elasticsearch_utils import connect_and_init_elasticsearch, close_elasticsearch_connect
 
 
 async def startup():
