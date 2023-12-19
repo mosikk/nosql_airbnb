@@ -1,18 +1,11 @@
 x-api-config: &api-config
-  build: app
+  build: src
   env_file:
     - env/docker.env
 
   depends_on:
     mongo_cluster_init:
       condition: service_completed_successfully
-
-    elasticsearch_node_01:
-      condition: service_healthy
-    elasticsearch_node_02:
-      condition: service_healthy
-    elasticsearch_node_03:
-      condition: service_healthy
 
     memcached_node_01:
       condition: service_healthy

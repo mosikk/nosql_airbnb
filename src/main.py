@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from fastapi import FastAPI
 import uvicorn
 
@@ -8,15 +9,17 @@ from utils.elasticsearch_utils import connect_and_init_elasticsearch, close_elas
 
 async def startup():
     await connect_and_init_mongo()
-    await connect_and_init_elasticsearch()
+    # await connect_and_init_elasticsearch()
     # connect_messenger_memcached()
 
 
 async def shutdown():
     await close_mongo_connect()
-    await close_elasticsearch_connect()
+    # await close_elasticsearch_connect()
     # close_memcached_connect()
 
+
+load_dotenv()
 
 app = FastAPI()
 

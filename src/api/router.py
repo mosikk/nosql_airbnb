@@ -13,13 +13,14 @@ router = APIRouter()
 
 @router.post("/clients")
 async def add_client(
-    client: UpdateClient,
+    name: str,
     repository: MongoRepository = Depends(MongoRepository.get_instance),
 ):
+    client = UpdateClient(name=name)
     client_id = await repository.create_client(client)
     return client_id
 
-
+'''
 @router.get("/clients/{client_id}", response_model=Client)
 async def get_user_by_id(
     user_id: str, 
@@ -101,3 +102,4 @@ async def pay_booking_by_id(
     
     booking_id = await repository.pay_booking(booking_id)
     return booking_id
+'''
