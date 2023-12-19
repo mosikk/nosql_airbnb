@@ -12,12 +12,14 @@ class Booking(BaseModel):
     end_dt: Optional[datetime]
 
     @classmethod
-    def Map(cls, client: Any):
+    def Map(cls, booking: Any):
+        if booking is None:
+            return None
         return cls(
-            id_booking=str(client['id_booking']),
-            id_client=str(client['id_client']),
-            id_room=str(client['id_room']),
-            is_paid=client['is_paid'],
+            id_booking=str(booking['id_booking']),
+            id_client=str(booking['id_client']),
+            id_room=str(booking['id_room']),
+            is_paid=bool(booking['is_paid']),
         )
 
 

@@ -8,9 +8,11 @@ class Client(BaseModel):
 
     @classmethod
     def Map(cls, client: Any):
+        if client is None:
+            return None
         return cls(
             id=str(client['_id']),
-            name=client['name'],
+            name=str(client['name']),
         )
 
 

@@ -1,5 +1,6 @@
 from bson import ObjectId
 from fastapi import APIRouter, status, Depends
+from typing import Optional
 from starlette.responses import Response
 
 from models.booking import Booking, UpdateBooking
@@ -19,39 +20,41 @@ async def add_client(
     client = UpdateClient(name=name)
     client_id = await repository.create_client(client)
     return client_id
-    # return name
 
 
 @router.get("/clients/{client_id}", response_model=Client)
 async def get_client_by_id(
-    user_id: str, 
+    client_id: str, 
     repository: MongoRepository = Depends(MongoRepository.get_instance),
     # memcached_user_client: HashClient = Depends(get_memcached_user_client)
 ):
-    if not ObjectId.is_valid(user_id):
+    if not ObjectId.is_valid(client_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
     """
-    user = memcached_user_client.get(user_id)
-    if user is not None:
-        print('using cached user data', flush=True)
-        return user
+    client = memcached_user_client.get(client_id)
+    if client is not None:
+        print('using cached client data', flush=True)
+        return client
     """
 
-    user = await repository.get_client_by_id(user_id)
-    if user is None:
+    client = await repository.get_client_by_id(client_id)
+    if client is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     
-    # memcached_user_client.add(user_id, user, int(os.getenv('MEMCACHED_MESSENGER_USER_EXPIRE')))
+    # memcached_user_client.add(client_id, user, int(os.getenv('MEMCACHED_MESSENGER_USER_EXPIRE')))
     
-    return user
+    return client
 
-'''
+
 @router.post("/rooms")
 async def add_room(
-    room: UpdateRoom,
+    name: str,
+    address: str,
+    description: str,
     repository: MongoRepository = Depends(MongoRepository.get_instance),
 ):
+    room = UpdateRoom(name=name, address=address, description=description)
     room_id = await repository.create_room(room)
     return room_id
 
@@ -80,7 +83,7 @@ async def get_room_by_id(
     
     return room
 
-
+'''
 @router.post("/rooms/book_room")
 async def book_room_by_id(
     booking: UpdateBooking,
