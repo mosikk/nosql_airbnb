@@ -1,5 +1,7 @@
 from bson import ObjectId
 from fastapi import APIRouter, status, Depends
+import os
+from pymemcache import HashClient
 from typing import Optional
 from starlette.responses import Response
 
@@ -7,6 +9,7 @@ from models.booking import Booking, UpdateBooking
 from models.client import Client, UpdateClient
 from models.room import Room, UpdateRoom
 from repository.mongo_repository import MongoRepository
+from repository.cache_repository import get_memcached_clients_client, get_memcached_rooms_client, get_memcached_bookings_client
 
 
 router = APIRouter()
@@ -26,23 +29,23 @@ async def add_client(
 async def get_client_by_id(
     client_id: str, 
     repository: MongoRepository = Depends(MongoRepository.get_instance),
-    # memcached_user_client: HashClient = Depends(get_memcached_user_client)
+    memcached_clients_client: HashClient = Depends(get_memcached_clients_client)
 ):
     if not ObjectId.is_valid(client_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    """
-    client = memcached_user_client.get(client_id)
+
+    client = memcached_clients_client.get(client_id)
     if client is not None:
         print('using cached client data', flush=True)
         return client
-    """
+
 
     client = await repository.get_client_by_id(client_id)
     if client is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     
-    # memcached_user_client.add(client_id, user, int(os.getenv('MEMCACHED_MESSENGER_USER_EXPIRE')))
+    memcached_clients_client.add(client_id, client, int(os.getenv('MEMCACHED_CLIENTS_EXPIRE')))
     
     return client
 
@@ -63,23 +66,21 @@ async def add_room(
 async def get_room_by_id(
     room_id: str, 
     repository: MongoRepository = Depends(MongoRepository.get_instance),
-    # memcached_rooms: HashClient = Depends(get_memcached_rooms),
+    memcached_rooms_client: HashClient = Depends(get_memcached_rooms_client),
 ):
     if not ObjectId.is_valid(room_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    """
-    room = memcached_rooms.get(room_id)
+    room = memcached_rooms_client.get(room_id)
     if room is not None:
         print('using cached room data', flush=True)
         return room
-    """
 
     room = await repository.get_room_by_id(room_id)
     if room is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     
-    # memcached_rooms.add(room_id, riim, int(os.getenv('MEMCACHED_MESSENGER_ROOM_EXPIRE')))
+    memcached_rooms_client.add(room_id, room, int(os.getenv('MEMCACHED_ROOMS_EXPIRE')))
     
     return room
 
@@ -117,22 +118,20 @@ async def pay_booking_by_id(
 async def get_booking_by_id(
     booking_id: str, 
     repository: MongoRepository = Depends(MongoRepository.get_instance),
-    # memcached_rooms: HashClient = Depends(get_memcached_rooms),
+    memcached_bookings_client: HashClient = Depends(get_memcached_bookings_client),
 ):
     if not ObjectId.is_valid(booking_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    """
-    room = memcached_rooms.get(room_id)
-    if room is not None:
-        print('using cached room data', flush=True)
-        return room
-    """
+    booking = memcached_bookings_client.get(booking_id)
+    if booking is not None:
+        print('using cached booking data', flush=True)
+        return booking
 
     booking = await repository.get_booking_by_id(booking_id)
     if booking is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     
-    # memcached_rooms.add(room_id, riim, int(os.getenv('MEMCACHED_MESSENGER_ROOM_EXPIRE')))
+    memcached_bookings_client.add(booking_id, booking, int(os.getenv('MEMCACHED_BOOKINGS_EXPIRE')))
     
     return booking

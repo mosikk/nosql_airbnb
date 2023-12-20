@@ -27,22 +27,22 @@ async def connect_and_init_mongo():
 
         if mongo_db not in await mongo_client.list_database_names():
             await mongo_client.get_database(mongo_db).create_collection(mongo_clients_collection)
-            print(f'Collection {mongo_clients_collection} created')
+            print(f'Collection {mongo_clients_collection} created', flush=True)
 
             await mongo_client.get_database(mongo_db).create_collection(mongo_rooms_collection)
-            print(f'Collection {mongo_rooms_collection} created')
+            print(f'Collection {mongo_rooms_collection} created', flush=True)
 
             await mongo_client.get_database(mongo_db).create_collection(mongo_bookings_collection)
-            print(f'Collection {mongo_bookings_collection} created')
+            print(f'Collection {mongo_bookings_collection} created', flush=True)
 
             mongo_clients_collection = mongo_client.get_database(mongo_db).get_collection(mongo_clients_collection)
             mongo_rooms_collection = mongo_client.get_database(mongo_db).get_collection(mongo_rooms_collection)
             mongo_bookings_collection = mongo_client.get_database(mongo_db).get_collection(mongo_bookings_collection)
 
-            print(f'Database {mongo_db} created')
+            print(f'Database {mongo_db} created', flush=True)
 
     except Exception as ex:
-        print(f'Cant connect to mongo: {ex}')
+        print(f'Cant connect to mongo: {ex}', flush=True)
 
 
 def close_mongo_connect():
