@@ -3,7 +3,7 @@ import os
 from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 
-from utils.mongo_utils import filter_by_id
+from utils.mongo_utils import filter_by_id, filter_by_name
 from models.booking import Booking, UpdateBooking
 from models.client import Client, UpdateClient
 from models.room import Room, UpdateRoom
@@ -76,6 +76,11 @@ class MongoRepository:
     async def get_client_by_id(self, client_id: str) -> Client | None:
         client = await self._mongo_clients_collection.find_one(filter_by_id(client_id))
         return Client.Map(client)
+
+
+    async def get_client_by_name(self, client_name: str) -> Client | None:
+        client = await self._mongo_clients_collection.find_one(filter_by_name(client_name))
+        return Client.Map(client)
     
 
     async def create_room(self, room: UpdateClient) -> str:
@@ -96,6 +101,7 @@ class MongoRepository:
     async def pay_booking(self, booking_id: str) -> Booking | None:
         cur_booking = Booking.Map(await self._mongo_bookings_collection.find_one(filter_by_id(booking_id)))
         if cur_booking.is_paid == True:
+            print(f'Booking {booking_id} is already paid', flush=True)
             return None
         new_booking = Booking(id=cur_booking.id, client_id=cur_booking.client_id, room_id=cur_booking.room_id, is_paid=True)
         await self._mongo_bookings_collection.find_one_and_replace(filter_by_id(booking_id), dict(new_booking))

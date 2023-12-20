@@ -21,6 +21,12 @@ async def add_client(
     repository: MongoRepository = Depends(MongoRepository.get_instance),
 ):
     client = UpdateClient(name=name)
+    existed_client = await repository.get_client_by_name(name)
+    if existed_client is not None:
+        print(f'Client with name {name} already exists', flush=True)
+        print(f'Existed_client {existed_client}', flush=True)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    
     client_id = await repository.create_client(client)
     return client_id
 
@@ -95,6 +101,16 @@ async def book_room_by_id(
     if not ObjectId.is_valid(client_id) or not ObjectId.is_valid(room_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
     
+    client = await repository.get_client_by_id(client_id)
+    if client is None:
+        print(f'Client with id {client_id} do not exist', flush=True)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    
+    room = await repository.get_room_by_id(room_id)
+    if room is None:
+        print(f'Room with id {room_id} do not exist', flush=True)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+
     booking = UpdateBooking(client_id=client_id, room_id=room_id, is_paid=is_paid)
     booking_id = await repository.book_room(booking)
     return booking_id
@@ -104,14 +120,23 @@ async def book_room_by_id(
 async def pay_booking_by_id(
     booking_id: str,
     repository: MongoRepository = Depends(MongoRepository.get_instance),
+    memcached_bookings_client: HashClient = Depends(get_memcached_bookings_client),
 ):
     if not ObjectId.is_valid(booking_id):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
     
-    booking = await repository.pay_booking(booking_id)
+    booking = await repository.get_booking_by_id(booking_id)
     if booking is None:
+        print(f'Booking with id {booking_id} do not exist', flush=True)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    
+    paid_booking = await repository.pay_booking(booking_id)
+    if paid_booking is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
-    return booking
+    
+    memcached_bookings_client.delete(booking_id)
+    memcached_bookings_client.add(booking_id, paid_booking, int(os.getenv('MEMCACHED_BOOKINGS_EXPIRE')))
+    return paid_booking
 
 
 @router.get("/bookings/{booking_id}", response_model=Booking)

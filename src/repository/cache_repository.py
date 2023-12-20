@@ -44,7 +44,7 @@ def close_memcached_connect():
 
     memcached_clients = [memcached_clients_client,
                          memcached_rooms_client,
-                         memcached_bookings_client,]
+                         memcached_bookings_client]
 
     for memcached_client in memcached_clients:
         if memcached_client is not None:
