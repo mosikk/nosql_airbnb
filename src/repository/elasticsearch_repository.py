@@ -175,6 +175,20 @@ class ElasticSearchRepository:
         rooms = await self.find_rooms_by_query(query)
         return rooms
 
+    async def pay_booking(self, booking_id: str) -> Booking | None:
+        query = {
+            "match": {
+                "booking_id": booking_id
+            }
+        }
+        cur_booking = await self.find_booking_by_query(query)[0]
+        if cur_booking.is_paid == True:
+            print(f'Booking {booking_id} is already paid', flush=True)
+            return None
+        new_booking = Booking(id=cur_booking.id, client_id=cur_booking.client_id, room_id=cur_booking.room_id, is_paid=True)
+        await self._elasticsearch_client.create(index=self._elasticsearch_index_booking, id=cur_booking.booking_id, document=dict(new_booking))
+        return new_booking
+
 
     @staticmethod
     def get_instance():
