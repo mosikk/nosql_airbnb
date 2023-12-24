@@ -62,10 +62,6 @@ class MongoRepository:
         self._mongo_clients_collection = mongo_client.get_database(mongo_db).get_collection(mongo_clients_collection)
         self._mongo_rooms_collection = mongo_client.get_database(mongo_db).get_collection(mongo_rooms_collection)
         self._mongo_bookings_collection = mongo_client.get_database(mongo_db).get_collection(mongo_bookings_collection)
-    
-
-    async def __del__(self):
-        await self.close_connection()
 
     
     async def create_client(self, client: UpdateClient) -> str:
@@ -90,6 +86,11 @@ class MongoRepository:
 
     async def get_room_by_id(self, room_id: str) -> Room | None:
         room = await self._mongo_rooms_collection.find_one(filter_by_id(room_id))
+        return Room.Map(room)
+    
+
+    async def get_room_by_name(self, room_name: str) -> Room | None:
+        room = await self._mongo_rooms_collection.find_one(filter_by_name(room_name))
         return Room.Map(room)
 
 

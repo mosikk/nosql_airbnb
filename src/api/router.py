@@ -69,6 +69,12 @@ async def add_room(
     repository: MongoRepository = Depends(MongoRepository.get_instance),
     search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)
 ):
+    existed_room = await repository.get_room_by_name(name)
+    if existed_room is not None:
+        print(f'Room with name {name} already exists', flush=True)
+        print(f'Existed_client {existed_room}', flush=True)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    
     room = UpdateRoom(name=name, city=city, country=country, address=address, description=description)
     room_id = await repository.create_room(room)
     await search.create_room(room_id, room)

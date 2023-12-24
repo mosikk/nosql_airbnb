@@ -98,8 +98,6 @@ services:
     volumes:
       - ./data/mongo_node_02:/data/db
     command: mongod --replSet docker-replicaset
-    ports:
-      - 27017:27017
   
   mongo_db_node_03:
     image: mongo
@@ -107,18 +105,40 @@ services:
     volumes:
       - ./data/mongo_node_03:/data/db
     command: mongod --replSet docker-replicaset
-    ports:
-      - 27017:27017
 
   memcached_client_node_01:
+    image: memcached:alpine
+    <<: *memcached-healhcheck
+
+  memcached_client_node_02:
+    image: memcached:alpine
+    <<: *memcached-healhcheck
+  
+  memcached_client_node_03:
     image: memcached:alpine
     <<: *memcached-healhcheck
   
   memcached_room_node_01:
     image: memcached:alpine
     <<: *memcached-healhcheck
+
+  memcached_room_node_02:
+    image: memcached:alpine
+    <<: *memcached-healhcheck
+
+  memcached_room_node_03:
+    image: memcached:alpine
+    <<: *memcached-healhcheck
   
   memcached_booking_node_01:
+    image: memcached:alpine
+    <<: *memcached-healhcheck
+  
+  memcached_booking_node_02:
+    image: memcached:alpine
+    <<: *memcached-healhcheck
+
+  memcached_booking_node_03:
     image: memcached:alpine
     <<: *memcached-healhcheck
 
