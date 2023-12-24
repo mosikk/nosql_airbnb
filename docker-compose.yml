@@ -8,10 +8,23 @@ x-api-config: &api-config
 
     memcached_client_node_01:
       condition: service_healthy
+    memcached_client_node_02:
+      condition: service_healthy
+    memcached_client_node_03:
+      condition: service_healthy
     memcached_room_node_01:
+      condition: service_healthy
+    memcached_room_node_02:
+      condition: service_healthy
+    memcached_room_node_03:
       condition: service_healthy
     memcached_booking_node_01:
       condition: service_healthy
+    memcached_booking_node_02:
+      condition: service_healthy
+    memcached_booking_node_03:
+      condition: service_healthy
+    
     elasticsearch_node_01:
       condition: service_healthy
     elasticsearch_node_02:
@@ -43,11 +56,21 @@ services:
 
   api_node_01:
     <<: *api-config
+  
+  api_node_02:
+    <<: *api-config
+  
+  api_node_03:
+    <<: *api-config
 
   mongo_cluster_init:
     image: mongo
     depends_on:
       mongo_db_node_01:
+        condition: service_healthy
+      mongo_db_node_02:
+        condition: service_healthy
+      mongo_db_node_03:
         condition: service_healthy
     volumes:
       - ./env/init-mongo.js:/scripts/init-mongo.js:ro
@@ -65,6 +88,24 @@ services:
     <<: *mongodb-healhcheck
     volumes:
       - ./data/mongo_node_01:/data/db
+    command: mongod --replSet docker-replicaset
+    ports:
+      - 27017:27017
+  
+  mongo_db_node_02:
+    image: mongo
+    <<: *mongodb-healhcheck
+    volumes:
+      - ./data/mongo_node_02:/data/db
+    command: mongod --replSet docker-replicaset
+    ports:
+      - 27017:27017
+  
+  mongo_db_node_03:
+    image: mongo
+    <<: *mongodb-healhcheck
+    volumes:
+      - ./data/mongo_node_03:/data/db
     command: mongod --replSet docker-replicaset
     ports:
       - 27017:27017
@@ -120,6 +161,8 @@ services:
       - 80:80
     depends_on:
       - api_node_01
+      - api_node_02
+      - api_node_03
     volumes:
       - ./data/nginx/cache:/data/nginx/cache
       - ./env/nginx.conf:/etc/nginx/nginx.conf:ro

@@ -69,7 +69,7 @@ async def add_room(
     repository: MongoRepository = Depends(MongoRepository.get_instance),
     search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)
 ):
-    room = UpdateRoom(name=name,city=city, country=country, address=address, description=description)
+    room = UpdateRoom(name=name, city=city, country=country, address=address, description=description)
     room_id = await repository.create_room(room)
     await search.create_room(room_id, room)
     return room_id
@@ -194,6 +194,7 @@ async def find_by_city(city_name: str,
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     return {"rooms": rooms}
 
+
 @router.get("/room_name/{room_name}")
 async def find_by_name(room_name: str,
                                        search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)):
@@ -201,6 +202,7 @@ async def find_by_name(room_name: str,
     if rooms is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     return {"rooms": rooms}
+
 
 @router.get("/address/{address}")
 async def find_by_address(address: str,
