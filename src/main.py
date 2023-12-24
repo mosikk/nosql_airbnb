@@ -4,7 +4,7 @@ import uvicorn
 
 from api.router import router
 from repository.mongo_repository import connect_and_init_mongo, close_mongo_connect
-from utils.elasticsearch_utils import connect_and_init_elasticsearch, close_elasticsearch_connect
+from repository.elasticsearch_repository import connect_and_init_elasticsearch, close_elasticsearch_connect
 from repository.cache_repository import connect_memcached, close_memcached_connect
 
 

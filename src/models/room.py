@@ -26,5 +26,7 @@ class Room(BaseModel):
 
 class UpdateRoom(BaseModel):
     name: str
+    country: str
+    city: str
     address: str
     description: str

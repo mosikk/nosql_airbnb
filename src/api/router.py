@@ -30,7 +30,7 @@ async def add_client(
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
     
     client_id = await repository.create_client(client)
-    await search.create_client(client)
+    await search.create_client(client_id, client)
     return client_id
 
 
@@ -62,14 +62,16 @@ async def get_client_by_id(
 @router.post("/rooms")
 async def add_room(
     name: str,
+    city: str,
+    country: str,
     address: str,
     description: str,
     repository: MongoRepository = Depends(MongoRepository.get_instance),
     search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)
 ):
-    room = UpdateRoom(name=name, address=address, description=description)
+    room = UpdateRoom(name=name,city=city, country=country, address=address, description=description)
     room_id = await repository.create_room(room)
-    await search.create_room(room)
+    await search.create_room(room_id, room)
     return room_id
 
 
@@ -101,6 +103,8 @@ async def book_room_by_id(
     client_id: str,
     room_id: str,
     is_paid: bool,
+    start_dt: str,
+    end_dt: str,
     repository: MongoRepository = Depends(MongoRepository.get_instance),
     search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)
 ):
@@ -116,10 +120,13 @@ async def book_room_by_id(
     if room is None:
         print(f'Room with id {room_id} do not exist', flush=True)
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
-
-    booking = UpdateBooking(client_id=client_id, room_id=room_id, is_paid=is_paid)
+        
+    if not await search.check_booking_dates(room_id, start_dt, end_dt):
+        print(f'Room with id {room_id} is already booked in this dates', flush=True)
+        return Response(status_code=status.HTTP_400_BAD_REQUEST)
+    booking = UpdateBooking(client_id=client_id, room_id=room_id, is_paid=is_paid, start_dt=start_dt, end_dt=end_dt)
     booking_id = await repository.book_room(booking)
-    await search.create_booking(booking)
+    await search.create_booking(booking_id, booking)
     return booking_id
 
 
@@ -139,7 +146,6 @@ async def pay_booking_by_id(
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
     
     paid_booking = await repository.pay_booking(booking_id)
-    await search.pay_booking(booking_id)
     if paid_booking is None:
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     
@@ -171,3 +177,35 @@ async def get_booking_by_id(
     return booking
 
 
+@router.get("/country/{country_name}")
+async def find_by_country(country_name: str,
+                                       search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)):
+    rooms = await search.find_by_country(country_name)
+    if rooms is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    return {"rooms": rooms}
+
+
+@router.get("/city/{city_name}")
+async def find_by_city(city_name: str,
+                                       search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)):
+    rooms = await search.find_by_city(city_name)
+    if rooms is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    return {"rooms": rooms}
+
+@router.get("/room_name/{room_name}")
+async def find_by_name(room_name: str,
+                                       search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)):
+    rooms = await search.find_by_name(room_name)
+    if rooms is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    return {"rooms": rooms}
+
+@router.get("/address/{address}")
+async def find_by_address(address: str,
+                                       search: ElasticSearchRepository = Depends(ElasticSearchRepository.get_instance)):
+    rooms = await search.find_by_address(address)
+    if rooms is None:
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    return {"rooms": rooms}

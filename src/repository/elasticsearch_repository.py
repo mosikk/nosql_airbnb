@@ -1,61 +1,81 @@
-import datetime
 import os
 from elasticsearch import AsyncElasticsearch
 from fastapi import Depends
 
-from utils.elasticsearch_utils import get_elasticsearch_client
 from models.booking import Booking, UpdateBooking
 from models.client import Client, UpdateClient
 from models.room import Room, UpdateRoom
 
 elasticsearch_client: AsyncElasticsearch = None
 
+
+def get_elasticsearch_client() -> AsyncElasticsearch:
+    return elasticsearch_client
+
+
+async def connect_and_init_elasticsearch():
+    global elasticsearch_client
+    elasticsearch_uri = os.getenv('ELASTICSEARCH_URI')
+    try:
+        elasticsearch_client = AsyncElasticsearch(elasticsearch_uri.split(','))
+        await elasticsearch_client.info()
+        print(f'Connected to elasticsearch with uri {elasticsearch_uri}')
+    except Exception as ex:
+        print(f'Cant connect to elasticsearch: {ex}')
+
+
+async def close_elasticsearch_connect():
+    global elasticsearch_client
+    if elasticsearch_client is None:
+        return
+    await elasticsearch_client.close()
+
 class ElasticSearchRepository:
     def __init__(self):
         self._elasticsearch_index_client = os.getenv('ELASTICSEARCH_INDEX_CLIENT')
         self._elasticsearch_index_room = os.getenv('ELASTICSEARCH_INDEX_ROOM')
-        self._elasticsearch_index_booking = os.getenv('ELASTICSEARCH_INDEX_CLIENT')
+        self._elasticsearch_index_booking = os.getenv('ELASTICSEARCH_INDEX_BOOKING')
 
     async def create_client(self, client_id: str, client: UpdateClient):
-        await self._elasticsearch_client.create(index=self._elasticsearch_index_client, id=client_id, document=dict(client))
+        await elasticsearch_client.create(index=self._elasticsearch_index_client, id=client_id, document=dict(client))
 
     async def create_booking(self, booking_id: str, booking: UpdateBooking):
-        await self._elasticsearch_client.create(index=self._elasticsearch_index_booking, id=booking_id, document=dict(booking))
+        await elasticsearch_client.create(index=self._elasticsearch_index_booking, id=booking_id, document=dict(booking))
 
     async def create_room(self, room_id: str, room: UpdateRoom):
-        await self._elasticsearch_client.create(index=self._elasticsearch_index_room, id=room_id, document=dict(room))
+        await elasticsearch_client.create(index=self._elasticsearch_index_room, id=room_id, document=dict(room))
     
     async def update_client(self, client_id: str, client: UpdateClient):
-        await self._elasticsearch_client.update(index=self._elasticsearch_index_client, id=client_id, document=dict(client))
+        await elasticsearch_client.update(index=self._elasticsearch_index_client, id=client_id, document=dict(client))
 
     async def update_booking(self, booking_id: str, booking: UpdateBooking):
-        await self._elasticsearch_client.update(index=self._elasticsearch_index_booking, id=booking_id, document=dict(booking))
+        await elasticsearch_client.update(index=self._elasticsearch_index_booking, id=booking_id, document=dict(booking))
 
     async def update_room(self, room_id: str, room: UpdateRoom):
-        await self._elasticsearch_client.update(index=self._elasticsearch_index_room, id=room_id, document=dict(room))
+        await elasticsearch_client.update(index=self._elasticsearch_index_room, id=room_id, document=dict(room))
     
     async def delete_client(self, client_id: str, client: UpdateClient):
-        await self._elasticsearch_client.update(index=self._elasticsearch_index_client, id=client_id)
+        await elasticsearch_client.update(index=self._elasticsearch_index_client, id=client_id)
 
     async def delete_booking(self, booking_id: str, booking: UpdateBooking):
-        await self._elasticsearch_client.update(index=self._elasticsearch_index_booking, id=booking_id)
+        await elasticsearch_client.update(index=self._elasticsearch_index_booking, id=booking_id)
 
     async def delete_room(self, room_id: str, room: UpdateRoom):
-        await self._elasticsearch_client.update(index=self._elasticsearch_index_room, id=room_id)
+        await elasticsearch_client.update(index=self._elasticsearch_index_room, id=room_id)
 
     async def find_booking_by_query(self, query) -> list:
-        response = await self._elasticsearch_client.search(index=self._elasticsearch_index, query=query,
+        response = await elasticsearch_client.search(index=self._elasticsearch_index_booking, query=query,
                                                            filter_path=['hits.hits._id', 'hits.hits._source'])
         if 'hits' not in response.body:
             return []
         result = response.body['hits']['hits']
-        booking = list(map(lambda reservation:
-                                Booking(id=reservation['_id'],
-                                                client_id=reservation['_source']['client_id'],
-                                                room_id=reservation['_source']['room_id'],
-                                                start_dt=reservation['_source']['start_dt'],
-                                                end_dt=reservation['_source']['end_dt'],
-                                                booking_status=reservation['_source']['booking_status']), result))
+        booking = list(map(lambda booking:
+                                Booking(id=booking['_id'],
+                                                client_id=booking['_source']['client_id'],
+                                                room_id=booking['_source']['room_id'],
+                                                start_dt=booking['_source']['start_dt'],
+                                                end_dt=booking['_source']['end_dt'],
+                                                is_paid=booking['_source']['is_paid']), result))
         return booking
     
     async def find_booking_by_client_id(self, client_id: str) -> list:
@@ -67,7 +87,7 @@ class ElasticSearchRepository:
         booking = await self.find_booking_by_query(query)
         return booking
 
-    async def find_booking_by_booking_date(self, booking_date: datetime) -> list:
+    async def find_booking_by_booking_date(self, booking_date: str) -> list:
         query = {
             "match": {
                 "booking_date": booking_date
@@ -76,7 +96,7 @@ class ElasticSearchRepository:
         booking = await self.find_booking_by_query(query)
         return booking
     
-    async def find_booking_by_range(self, left_date: datetime, right_date: datetime) -> list:
+    async def find_booking_by_range(self, left_date: str, right_date: str) -> list:
         query = {
             "bool": {
                 "filter": [
@@ -114,7 +134,7 @@ class ElasticSearchRepository:
 
 
     async def find_rooms_by_query(self, query) -> list:
-        response = await self._elasticsearch_client.search(index=self._elasticsearch_index, query=query,
+        response = await elasticsearch_client.search(index=self._elasticsearch_index_room, query=query,
                                                            filter_path=['hits.hits._id', 'hits.hits._source'])
         if 'hits' not in response.body:
             return []
@@ -131,7 +151,7 @@ class ElasticSearchRepository:
     
     
     
-    async def find_rooms_by_address(self, query: str):
+    async def find_by_address(self, query: str):
         query = {
             "bool": {
                 "must": [
@@ -142,7 +162,7 @@ class ElasticSearchRepository:
         rooms = await self.find_rooms_by_query(query)
         return rooms
 
-    async def find_rooms_by_country(self, query: str):
+    async def find_by_country(self, query: str):
         query = {
             "bool": {
                 "must": [
@@ -175,20 +195,47 @@ class ElasticSearchRepository:
         rooms = await self.find_rooms_by_query(query)
         return rooms
 
-    async def pay_booking(self, booking_id: str) -> Booking | None:
-        query = {
-            "match": {
-                "booking_id": booking_id
+    async def check_booking_dates(self, room_id: str, start_dt: str, end_dt: str) -> bool:
+        index_exist = await elasticsearch_client.indices.exists(index=self._elasticsearch_index_booking)
+        if not index_exist:
+            return True
+        query_start = {
+            "bool": {
+                "filter": [
+                    {"match": {"room_id": room_id}},
+                    {
+                        "range": {
+                            "start_dt": {
+                                "gte": start_dt,
+                                "lte": end_dt,
+                            }
+                        }
+                    }
+                ]
             }
         }
-        cur_booking = await self.find_booking_by_query(query)[0]
-        if cur_booking.is_paid == True:
-            print(f'Booking {booking_id} is already paid', flush=True)
-            return None
-        new_booking = Booking(id=cur_booking.id, client_id=cur_booking.client_id, room_id=cur_booking.room_id, is_paid=True)
-        await self._elasticsearch_client.create(index=self._elasticsearch_index_booking, id=cur_booking.booking_id, document=dict(new_booking))
-        return new_booking
-
+        booking_start = await self.find_booking_by_query(query_start)
+        query_end = {
+            "bool": {
+                "filter": [
+                    {"match": {"room_id": room_id}},
+                    {
+                        "range": {
+                            "end_dt": {
+                                "gte": start_dt,
+                                "lte": end_dt,
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+        booking_end = await self.find_booking_by_query(query_end)
+        print(booking_end)
+        if (len(booking_start) + len(booking_end)) == 0:
+            return True
+        else:
+            return False
 
     @staticmethod
     def get_instance():
