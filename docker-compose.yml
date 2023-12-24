@@ -12,6 +12,12 @@ x-api-config: &api-config
       condition: service_healthy
     memcached_booking_node_01:
       condition: service_healthy
+    elasticsearch_node_01:
+      condition: service_healthy
+    elasticsearch_node_02:
+      condition: service_healthy
+    elasticsearch_node_03:
+      condition: service_healthy 
 
 x-mongodb-healthcheck: &mongodb-healhcheck
   healthcheck:
@@ -62,7 +68,7 @@ services:
     command: mongod --replSet docker-replicaset
     ports:
       - 27017:27017
-  
+
   memcached_client_node_01:
     image: memcached:alpine
     <<: *memcached-healhcheck
@@ -74,6 +80,39 @@ services:
   memcached_booking_node_01:
     image: memcached:alpine
     <<: *memcached-healhcheck
+
+  elasticsearch_node_01:
+    image: elasticsearch:8.10.2
+    <<: [ *elasticsearch-healhcheck ]
+    environment:
+      - node.name=elasticsearch_node_01
+      - discovery.seed_hosts=[elasticsearch_node_02,elasticsearch_node_03]
+    env_file:
+      - env/elasticsearch.env
+    volumes:
+      - ./data/elasticsearch_node_01:/usr/share/elasticsearch/data_01
+
+  elasticsearch_node_02:
+    image: elasticsearch:8.10.2
+    <<: [ *elasticsearch-healhcheck ]
+    environment:
+      - node.name=elasticsearch_node_02
+      - discovery.seed_hosts=[elasticsearch_node_01,elasticsearch_node_03]
+    env_file:
+      - env/elasticsearch.env
+    volumes:
+      - ./data/elasticsearch_node_02:/usr/share/elasticsearch/data_02
+
+  elasticsearch_node_03:
+    image: elasticsearch:8.10.2
+    <<: [ *elasticsearch-healhcheck ]
+    environment:
+      - node.name=elasticsearch_node_03
+      - discovery.seed_hosts=[elasticsearch_node_01,elasticsearch_node_02]
+    env_file:
+      - env/elasticsearch.env
+    volumes:
+      - ./data/elasticsearch_node_03:/usr/share/elasticsearch/data_03
 
   nginx:
     image: nginx

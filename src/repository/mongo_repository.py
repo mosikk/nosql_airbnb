@@ -103,7 +103,7 @@ class MongoRepository:
         if cur_booking.is_paid == True:
             print(f'Booking {booking_id} is already paid', flush=True)
             return None
-        new_booking = Booking(id=cur_booking.id, client_id=cur_booking.client_id, room_id=cur_booking.room_id, is_paid=True)
+        new_booking = Booking(id=cur_booking.id,start_dt=cur_booking.start_dt, end_dt=cur_booking.end_dt ,client_id=cur_booking.client_id, room_id=cur_booking.room_id, is_paid=True)
         await self._mongo_bookings_collection.find_one_and_replace(filter_by_id(booking_id), dict(new_booking))
         return new_booking
 
